@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -37,7 +38,7 @@ import java.util.concurrent.ExecutionException;
  */
 public class MovieOverviewFragment extends Fragment
 {
-    private MovieData[] movieData;
+    private ArrayList<MovieData> movieData;
 
     private int movieDataLength;
 
@@ -142,7 +143,7 @@ public class MovieOverviewFragment extends Fragment
                 imageView = (ImageView) convertView;
             }
 
-            Picasso.with(mContext).load(movieData[position].getPoster()).into(imageView);
+            Picasso.with(mContext).load(movieData.get(position).getPoster()).into(imageView);
 
             return imageView;
         }
@@ -165,7 +166,7 @@ public class MovieOverviewFragment extends Fragment
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l)
             {
-                MovieData movie = movieData[pos];
+                MovieData movie = movieData.get(pos);
 
                 Bundle bundle = new Bundle();
                 bundle.putParcelable("movieData", movie);
@@ -182,91 +183,100 @@ public class MovieOverviewFragment extends Fragment
     private void updateMovies() throws ExecutionException, InterruptedException
     {
         movieData = new FetchMovieDataTask().execute().get();
-        movieDataLength = movieData.length;
+        movieDataLength = movieData.size();
     }
 
-    public class FetchMovieDataTask extends AsyncTask<String,Void,MovieData[]>
+    public class FetchMovieDataTask extends AsyncTask<String,Void,ArrayList<MovieData>>
     {
         private final String LOG_TAG = FetchMovieDataTask.class.getSimpleName();
 
-        private MovieData[] movieDataArray;
+        private ArrayList<MovieData> movieDataArray;
 
         @Override
-        protected MovieData[] doInBackground(String... params)
+        protected ArrayList<MovieData> doInBackground(String... params)
         {
+            final int PAGES_TO_FETCH = 5;
+
             String sortType = getString(R.string.pref_sort_key);
 
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
 
             // Will contain the raw JSON response as a string.
-            String tmdbJsonStr;
+            //String[] tmdbJsonStr = new String[PAGES_TO_FETCH];
+            ArrayList<String> tmdbJsonStr = new ArrayList<>();
 
-            try
+            for (int page = 1; page <= PAGES_TO_FETCH; page++)
             {
-                Uri.Builder builder = new Uri.Builder();
+                try
+                {
+                    Uri.Builder builder = new Uri.Builder();
 
-                builder.scheme("http")
-                        .authority("api.themoviedb.org")
-                        .appendPath("3")
-                        .appendPath("discover")
-                        .appendPath("movie")
-                        .appendQueryParameter("certification_country", "US")
-                        .appendQueryParameter("sort_by", sortType)
-                        .appendQueryParameter("api_key", getString(R.string.api_key));
-                URL url = new URL(builder.build().toString());
+                    builder.scheme("http")
+                            .authority("api.themoviedb.org")
+                            .appendPath("3")
+                            .appendPath("discover")
+                            .appendPath("movie")
+                            .appendQueryParameter("page", "" + page)
+                            .appendQueryParameter("certification_country", "US")
+                            .appendQueryParameter("sort_by", sortType)
+                            .appendQueryParameter("api_key", getString(R.string.api_key));
+                    URL url = new URL(builder.build().toString());
 
-                // Create the request to OpenWeatherMap, and open the connection
-                urlConnection = (HttpURLConnection) url.openConnection();
-                urlConnection.setRequestMethod("GET");
-                urlConnection.connect();
+                    // Create the request to OpenWeatherMap, and open the connection
+                    urlConnection = (HttpURLConnection) url.openConnection();
+                    urlConnection.setRequestMethod("GET");
+                    urlConnection.connect();
 
-                // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
-                StringBuffer buffer = new StringBuffer();
-                if (inputStream == null) {
-                    // Nothing to do.
+                    // Read the input stream into a String
+                    InputStream inputStream = urlConnection.getInputStream();
+                    StringBuffer buffer = new StringBuffer();
+                    if (inputStream == null) {
+                        // Nothing to do.
+                        return null;
+                    }
+                    reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
+                        // But it does make debugging a *lot* easier if you print out the completed
+                        // buffer for debugging.
+                        buffer.append(line + "\n");
+                    }
+
+                    if (buffer.length() == 0) {
+                        // Stream was empty.  No point in parsing.
+                        return null;
+                    }
+
+                    tmdbJsonStr.add(buffer.toString());
+
+                } catch (IOException e) {
+                    Log.e(LOG_TAG, "Error ", e);
+                    // If the code didn't successfully get the weather data,
+                    // there's no point in attempting
+                    // to parse it.
                     return null;
-                }
-                reader = new BufferedReader(new InputStreamReader(inputStream));
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                    // But it does make debugging a *lot* easier if you print out the completed
-                    // buffer for debugging.
-                    buffer.append(line + "\n");
-                }
-
-                if (buffer.length() == 0) {
-                    // Stream was empty.  No point in parsing.
-                    return null;
-                }
-                tmdbJsonStr = buffer.toString();
-
-            } catch (IOException e) {
-                Log.e(LOG_TAG, "Error ", e);
-                // If the code didn't successfully get the weather data, there's no point in attempting
-                // to parse it.
-                return null;
-            } finally{
-                if (urlConnection != null) {
-                    urlConnection.disconnect();
-                }
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (final IOException e) {
-                        Log.e(LOG_TAG, "Error closing stream", e);
+                } finally{
+                    if (urlConnection != null) {
+                        urlConnection.disconnect();
+                    }
+                    if (reader != null) {
+                        try {
+                            reader.close();
+                        } catch (final IOException e) {
+                            Log.e(LOG_TAG, "Error closing stream", e);
+                        }
                     }
                 }
-            }
 
-            Log.v("JSON String", tmdbJsonStr);
+
+            }
 
             try
             {
-                movieDataArray = getMovieDataFromJson(tmdbJsonStr);
+                movieDataArray = getMovieDataFromJson(tmdbJsonStr, PAGES_TO_FETCH);
             }
             catch (JSONException e)
             {
@@ -275,17 +285,12 @@ public class MovieOverviewFragment extends Fragment
                 movieDataArray = null;
             }
 
-//            for (int i = 0; i < movieDataArray.length; i++)
-//            {
-//                Log.v("Movie Title", movieDataArray[i].getTitle());
-//            }
-
             return movieDataArray;
         }
 
-        private MovieData[] getMovieDataFromJson(String tmdbJsonStr) throws JSONException
+        private ArrayList<MovieData> getMovieDataFromJson(ArrayList<String> tmdbJsonStr, int pages)
+                throws JSONException
         {
-            final String TMDB_PAGE = "page";
             final String TMDB_RESULTS = "results";
             final String TMDB_BACKGROUND = "backdrop_path";
             final String TMDB_POSTER = "poster_path";
@@ -295,32 +300,50 @@ public class MovieOverviewFragment extends Fragment
             final String TMDB_POPULARITY = "popularity";
             final String TMDB_USER_RATING = "vote_average";
 
-            JSONObject tmdbJson = new JSONObject(tmdbJsonStr);
-            JSONArray jsonArray = tmdbJson.getJSONArray(TMDB_RESULTS);
+            final int PAGES_PER = 20;
 
-            MovieData[] movies = new MovieData[jsonArray.length()];
+            ArrayList<MovieData> movies = new ArrayList<>();
 
-            for(int i = 0; i < jsonArray.length(); i++)
+            for(int i = 0; i < pages; i++)
             {
-                movies[i] = new MovieData();
+                JSONObject tmdbJson = new JSONObject(tmdbJsonStr.get(i));
+                JSONArray jsonArray = tmdbJson.getJSONArray(TMDB_RESULTS);
 
-                movies[i].setBackground(jsonArray.getJSONObject(i).getString(TMDB_BACKGROUND));
-                movies[i].setTitle(jsonArray.getJSONObject(i).getString(TMDB_TITLE));
-                movies[i].setPlotOverview(jsonArray.getJSONObject(i).getString(TMDB_OVERVIEW));
-                movies[i].setReleaseDate(jsonArray.getJSONObject(i).getString(TMDB_DATE));
-                movies[i].setPoster(jsonArray.getJSONObject(i).getString(TMDB_POSTER));
-                movies[i].setPopularity(jsonArray.getJSONObject(i).getString(TMDB_POPULARITY));
-                movies[i].setUserRating(jsonArray.getJSONObject(i).getString(TMDB_USER_RATING));
+                int rangeLow = i * PAGES_PER;
+                int rangeHigh = rangeLow + PAGES_PER;
 
+                int count = 0;
+
+                for(int j = rangeLow; j < rangeHigh; j++)
+                {
+                    movies.add(new MovieData());
+
+                    movies.get(j).setBackground(jsonArray.getJSONObject(count)
+                            .getString(TMDB_BACKGROUND));
+                    movies.get(j).setTitle(jsonArray.getJSONObject(count)
+                            .getString(TMDB_TITLE));
+                    movies.get(j).setPlotOverview(jsonArray.getJSONObject(count)
+                            .getString(TMDB_OVERVIEW));
+                    movies.get(j).setReleaseDate(jsonArray.getJSONObject(count)
+                            .getString(TMDB_DATE));
+                    movies.get(j).setPoster(jsonArray.getJSONObject(count)
+                            .getString(TMDB_POSTER));
+                    movies.get(j).setPopularity(jsonArray.getJSONObject(count)
+                            .getString(TMDB_POPULARITY));
+                    movies.get(j).setUserRating(jsonArray.getJSONObject(count)
+                            .getString(TMDB_USER_RATING));
+
+                    count++;
+                }
             }
 
             return movies;
         }
 
         @Override
-        protected void onPostExecute(MovieData[] array)
+        protected void onPostExecute(ArrayList<MovieData> arrayList)
         {
-            movieData = array;
+            movieData = arrayList;
         }
 
     }
