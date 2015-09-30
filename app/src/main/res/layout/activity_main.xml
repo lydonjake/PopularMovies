@@ -2,6 +2,6 @@
           xmlns:tools="http://schemas.android.com/tools"
           android:id="@+id/fragment"
           android:name="com.example.android.popularmovies.MovieOverviewFragment"
-          tools:layout="@layout/fragment_movieOverview"
+          tools:layout="@layout/fragment_movie_overview"
           android:layout_width="match_parent"
           android:layout_height="match_parent"/>
