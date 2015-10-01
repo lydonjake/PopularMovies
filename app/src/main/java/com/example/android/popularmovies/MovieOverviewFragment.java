@@ -14,9 +14,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.Spinner;
 
 import com.squareup.picasso.Picasso;
 
@@ -44,6 +46,8 @@ public class MovieOverviewFragment extends Fragment
 
     private ImageAdapter movieAdapter;
 
+    private String sortType = "popularity.desc";
+
     public MovieOverviewFragment()
     {
     }
@@ -56,35 +60,51 @@ public class MovieOverviewFragment extends Fragment
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater)
+    {
         // Inflate the menu; this adds items to the action bar if it is present.
-        inflater.inflate(R.menu.menu_movie_overview_fragment, menu);
+        inflater.inflate(R.menu.menu_movie_overview_fragment, menu); // inflate the menu
+
+        MenuItem item = menu.findItem(R.id.menu_spinner);
+        Spinner spinner = (Spinner) item.getActionView();
+        ArrayAdapter adapter = ArrayAdapter.createFromResource(getActivity(), R.array.action_sort_entries, android.R.layout.simple_spinner_dropdown_item);
+        spinner.setAdapter(adapter);
+
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
-
-        try
-        {
-            updateMovies();
-        }
-        catch (ExecutionException e)
-        {
-            Log.e(LOG_TAG, "Error ", e);
-        }
-        catch (InterruptedException e)
-        {
-            Log.e(LOG_TAG, "Error ", e);
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        // Handle action bar item clicks here. The action bar will
+//        // automatically handle clicks on the Home/Up button, so long
+//        // as you specify a parent activity in AndroidManifest.xml.
+//        int id = item.getItemId();
+//
+//        if(id == 0)
+//        {
+//            sortType = "popularity.desc";
+//        }
+//        else if (id == 1)
+//        {
+//            sortType = "vote_average.desc";
+//        }
+//
+//        final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
+//
+//        try
+//        {
+//            updateMovies();
+//        }
+//        catch (ExecutionException e)
+//        {
+//            Log.e(LOG_TAG, "Error ", e);
+//        }
+//        catch (InterruptedException e)
+//        {
+//            Log.e(LOG_TAG, "Error ", e);
+//        }
+//
+//        return super.onOptionsItemSelected(item);
+//    }
 
     @Override
     public void onStart()
@@ -171,7 +191,7 @@ public class MovieOverviewFragment extends Fragment
                 Bundle bundle = new Bundle();
                 bundle.putParcelable("movieData", movie);
 
-                Intent detailIntent = new Intent(view.getContext(),MovieDetailActivity.class);
+                Intent detailIntent = new Intent(view.getContext(), MovieDetailActivity.class);
                 detailIntent.putExtras(bundle);
                 startActivity(detailIntent);
             }
@@ -197,7 +217,7 @@ public class MovieOverviewFragment extends Fragment
         {
             final int PAGES_TO_FETCH = 5;
 
-            String sortType = getString(R.string.pref_sort_key);
+            //String sortType = getString(R.string.action_sort_value);
 
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;

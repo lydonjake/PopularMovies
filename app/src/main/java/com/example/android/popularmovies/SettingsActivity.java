@@ -32,8 +32,6 @@ import java.util.List;
  */
 public class SettingsActivity extends PreferenceActivity
 {
-
-
     /**
      * {@inheritDoc}
      */
