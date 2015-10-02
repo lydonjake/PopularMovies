@@ -87,12 +87,12 @@ public class MovieData implements Parcelable
 
     public String getPoster()
     {
-        return poster;
+        return "http://image.tmdb.org/t/p/w185" + poster;
     }
 
     public void setPoster(String poster)
     {
-        this.poster = "http://image.tmdb.org/t/p/w185" + poster;
+        this.poster = poster;
     }
 
     public String getUserRating()
@@ -129,12 +129,21 @@ public class MovieData implements Parcelable
 
     public String getBackground()
     {
+        if(background.equals("null"))
+        {
+            background = "http://image.tmdb.org/t/p/w185" + poster;
+        }
+        else
+        {
+            background = "http://image.tmdb.org/t/p/w780" + background;
+        }
+
         return background;
     }
 
     public void setBackground(String background)
     {
-        this.background = "http://image.tmdb.org/t/p/w780" + background;
+        this.background = background;
     }
 
     public String getReleaseDate()
@@ -145,7 +154,6 @@ public class MovieData implements Parcelable
         DateFormat original = new SimpleDateFormat("yyyy-MM-dd");
 
         DateFormat formatted = new SimpleDateFormat("MMM dd, yyyy");
-
 
         try
         {

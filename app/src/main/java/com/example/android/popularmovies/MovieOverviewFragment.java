@@ -161,7 +161,8 @@ public class MovieOverviewFragment extends Fragment
             }
 
             Picasso.with(mContext).load(movieData.get(position).getPoster())
-                    .placeholder(mContext.getResources().getDrawable(R.drawable.placeholderimage))
+ //                   .error(mContext.getResources().getDrawable(R.drawable.placeholderimage))
+                    .error(R.drawable.placeholderimage)
                     .into(imageView);
 
             return imageView;
