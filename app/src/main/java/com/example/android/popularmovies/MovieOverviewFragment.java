@@ -2,6 +2,7 @@ package com.example.android.popularmovies;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -46,8 +47,6 @@ public class MovieOverviewFragment extends Fragment
 
     private ImageAdapter movieAdapter;
 
-    private String sortType = "popularity.desc";
-
     public MovieOverviewFragment()
     {
     }
@@ -57,6 +56,10 @@ public class MovieOverviewFragment extends Fragment
         super.onCreate(savedInstanceState);
 
         setHasOptionsMenu(true);
+
+        setRetainInstance(true);
+
+        updateMovies();
     }
 
     @Override
@@ -67,65 +70,61 @@ public class MovieOverviewFragment extends Fragment
 
         MenuItem item = menu.findItem(R.id.menu_spinner);
         Spinner spinner = (Spinner) item.getActionView();
-        ArrayAdapter adapter = ArrayAdapter.createFromResource(getActivity(), R.array.action_sort_entries, android.R.layout.simple_spinner_dropdown_item);
+        ArrayAdapter adapter = ArrayAdapter.createFromResource(getActivity(),
+                R.array.action_sort_list, R.layout.support_simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
+
+        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        String sortType = sharedPref.getString("pref_sort_key",
+                getString(R.string.pref_sort_default));
+
+        int sortSpot = 0;
+
+        if(sortType.equals(getString(R.string.pref_sort_setUserRating)))
+        {
+            sortSpot = 1;
+        }
+
+        spinner.setSelection(sortSpot, false);
+
+        spinner.setOnItemSelectedListener(new SpinnerListener());
 
     }
 
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        // Handle action bar item clicks here. The action bar will
-//        // automatically handle clicks on the Home/Up button, so long
-//        // as you specify a parent activity in AndroidManifest.xml.
-//        int id = item.getItemId();
-//
-//        if(id == 0)
-//        {
-//            sortType = "popularity.desc";
-//        }
-//        else if (id == 1)
-//        {
-//            sortType = "vote_average.desc";
-//        }
-//
-//        final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
-//
-//        try
-//        {
-//            updateMovies();
-//        }
-//        catch (ExecutionException e)
-//        {
-//            Log.e(LOG_TAG, "Error ", e);
-//        }
-//        catch (InterruptedException e)
-//        {
-//            Log.e(LOG_TAG, "Error ", e);
-//        }
-//
-//        return super.onOptionsItemSelected(item);
-//    }
-
-    @Override
-    public void onStart()
+    public class SpinnerListener implements AdapterView.OnItemSelectedListener
     {
-        super.onStart();
-
-        final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
-
-        try
+        @Override
+        public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
         {
-            updateMovies();
-        }
-        catch (ExecutionException e)
-        {
-            Log.e(LOG_TAG, "Error ", e);
-        }
-        catch (InterruptedException e)
-        {
-            Log.e(LOG_TAG, "Error ", e);
+            if (position == 0)
+            {
+                String sort = getString(R.string.pref_sort_setPopularity);
+
+                SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString("pref_sort_key", sort);
+                editor.apply();
+
+                updateMovies();
+
+            } else
+            {
+
+                String sort = getString(R.string.pref_sort_setUserRating);
+
+                SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPref.edit();
+                editor.putString("pref_sort_key", sort);
+                editor.apply();
+
+                updateMovies();
+            }
         }
 
+        @Override
+        public void onNothingSelected(AdapterView<?> parent)
+        {
+        }
     }
 
     public class ImageAdapter extends BaseAdapter
@@ -163,7 +162,9 @@ public class MovieOverviewFragment extends Fragment
                 imageView = (ImageView) convertView;
             }
 
-            Picasso.with(mContext).load(movieData.get(position).getPoster()).into(imageView);
+            Picasso.with(mContext).load(movieData.get(position).getPoster())
+                    .placeholder(mContext.getResources().getDrawable(R.drawable.noimage))
+                    .into(imageView);
 
             return imageView;
         }
@@ -200,10 +201,36 @@ public class MovieOverviewFragment extends Fragment
         return rootView;
     }
 
-    private void updateMovies() throws ExecutionException, InterruptedException
+    private void updateMovies()
     {
-        movieData = new FetchMovieDataTask().execute().get();
-        movieDataLength = movieData.size();
+        final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
+
+//        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+//        SharedPreferences.Editor editor = sharedPref.edit();
+//        editor.putString("pref_sort_key", sort);
+//        editor.apply();
+//
+//        String sortType = sharedPref.getString("pref_sort_key",
+//                getString(R.string.pref_sort_default));
+
+        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+        String sortType = sharedPref.getString("pref_sort_key",
+                getString(R.string.pref_sort_default));
+
+        try
+        {
+            movieData = new FetchMovieDataTask().execute(sortType).get();
+            movieDataLength = movieData.size();
+        }
+        catch (ExecutionException e)
+        {
+            Log.e(LOG_TAG, "Error ", e);
+        }
+        catch (InterruptedException e)
+        {
+            Log.e(LOG_TAG, "Error ", e);
+        }
+
     }
 
     public class FetchMovieDataTask extends AsyncTask<String,Void,ArrayList<MovieData>>
@@ -217,13 +244,13 @@ public class MovieOverviewFragment extends Fragment
         {
             final int PAGES_TO_FETCH = 5;
 
-            //String sortType = getString(R.string.action_sort_value);
+            String sortType = params[0];
+            final String VOTE_COUNT = "20";
 
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
 
             // Will contain the raw JSON response as a string.
-            //String[] tmdbJsonStr = new String[PAGES_TO_FETCH];
             ArrayList<String> tmdbJsonStr = new ArrayList<>();
 
             for (int page = 1; page <= PAGES_TO_FETCH; page++)
@@ -240,8 +267,12 @@ public class MovieOverviewFragment extends Fragment
                             .appendQueryParameter("page", "" + page)
                             .appendQueryParameter("certification_country", "US")
                             .appendQueryParameter("sort_by", sortType)
+                            .appendQueryParameter("vote_count.gte", VOTE_COUNT)
                             .appendQueryParameter("api_key", getString(R.string.api_key));
                     URL url = new URL(builder.build().toString());
+
+                    Log.v("SortType", sortType);
+                    Log.v("URL", url.toString());
 
                     // Create the request to OpenWeatherMap, and open the connection
                     urlConnection = (HttpURLConnection) url.openConnection();
@@ -364,6 +395,8 @@ public class MovieOverviewFragment extends Fragment
         protected void onPostExecute(ArrayList<MovieData> arrayList)
         {
             movieData = arrayList;
+            movieAdapter.notifyDataSetChanged();
+
         }
 
     }

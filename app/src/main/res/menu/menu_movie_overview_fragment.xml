@@ -3,11 +3,11 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
       <item
-          android:title="@string/action_sort_label"
+          android:title="@string/action_sort_title"
           android:id="@+id/menu_spinner"
           app:showAsAction="always"
           app:actionViewClass="android.support.v7.widget.AppCompatSpinner"
-          android:entries="@array/action_sort_entries"
+          android:entries="@array/action_sort_list"
           android:actionViewClass="android.widget.Spinner" />
 
 </menu>

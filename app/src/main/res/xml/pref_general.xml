@@ -1,4 +1,7 @@
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<EditTextPreference
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="@string/pref_sort_key"
+    android:defaultValue="@string/pref_sort_default"
+    />
 
 
-</PreferenceScreen>
