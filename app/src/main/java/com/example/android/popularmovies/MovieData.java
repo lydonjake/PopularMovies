@@ -2,8 +2,12 @@ package com.example.android.popularmovies;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
+import java.text.DateFormat;
 import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by Jake on 9/28/2015.
@@ -22,7 +26,6 @@ public class MovieData implements Parcelable
 
     public MovieData()
     {
-
     }
 
     @Override
@@ -136,11 +139,30 @@ public class MovieData implements Parcelable
 
     public String getReleaseDate()
     {
-        return releaseDate;
+        String pattern = "yyyy";
+        String formattedDate = "Date not found";
+
+        DateFormat original = new SimpleDateFormat("yyyy-MM-dd");
+
+        DateFormat formatted = new SimpleDateFormat("MMM dd, yyyy");
+
+
+        try
+        {
+            Date date = original.parse(releaseDate);
+
+            formattedDate = formatted.format(date);
+        }
+        catch (Exception e)
+        {
+            Log.e("Date Not Found", "Date Not Found");
+        }
+
+        return "Released: " + formattedDate;
     }
 
     public void setReleaseDate(String releaseDate)
     {
-        this.releaseDate = "Released on: " + releaseDate;
+        this.releaseDate = releaseDate;
     }
 }

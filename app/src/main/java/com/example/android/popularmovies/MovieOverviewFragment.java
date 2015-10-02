@@ -88,7 +88,6 @@ public class MovieOverviewFragment extends Fragment
         spinner.setSelection(sortSpot, false);
 
         spinner.setOnItemSelectedListener(new SpinnerListener());
-
     }
 
     public class SpinnerListener implements AdapterView.OnItemSelectedListener
@@ -106,10 +105,9 @@ public class MovieOverviewFragment extends Fragment
                 editor.apply();
 
                 updateMovies();
-
-            } else
+            }
+            else
             {
-
                 String sort = getString(R.string.pref_sort_setUserRating);
 
                 SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
@@ -163,7 +161,7 @@ public class MovieOverviewFragment extends Fragment
             }
 
             Picasso.with(mContext).load(movieData.get(position).getPoster())
-                    .placeholder(mContext.getResources().getDrawable(R.drawable.noimage))
+                    .placeholder(mContext.getResources().getDrawable(R.drawable.placeholderimage))
                     .into(imageView);
 
             return imageView;
@@ -205,14 +203,6 @@ public class MovieOverviewFragment extends Fragment
     {
         final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
 
-//        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
-//        SharedPreferences.Editor editor = sharedPref.edit();
-//        editor.putString("pref_sort_key", sort);
-//        editor.apply();
-//
-//        String sortType = sharedPref.getString("pref_sort_key",
-//                getString(R.string.pref_sort_default));
-
         SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         String sortType = sharedPref.getString("pref_sort_key",
                 getString(R.string.pref_sort_default));
@@ -250,7 +240,7 @@ public class MovieOverviewFragment extends Fragment
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
 
-            // Will contain the raw JSON response as a string.
+            // Will contain the raw JSON response as a string, within an arraylist.
             ArrayList<String> tmdbJsonStr = new ArrayList<>();
 
             for (int page = 1; page <= PAGES_TO_FETCH; page++)
@@ -274,7 +264,7 @@ public class MovieOverviewFragment extends Fragment
                     Log.v("SortType", sortType);
                     Log.v("URL", url.toString());
 
-                    // Create the request to OpenWeatherMap, and open the connection
+                    // Create the request to TMDB, and open the connection
                     urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setRequestMethod("GET");
                     urlConnection.connect();
