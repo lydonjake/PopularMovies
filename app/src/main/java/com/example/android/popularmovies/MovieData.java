@@ -10,7 +10,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Created by Jake on 9/28/2015.
+ * MovieData.java
+ * Created by Jake Lydon on 9/28/2015.
+ *
+ * Purpose: Movie data structure.
  */
 public class MovieData implements Parcelable
 {
@@ -129,6 +132,7 @@ public class MovieData implements Parcelable
 
     public String getBackground()
     {
+        //if the background image is null, use the poster as background
         if(background.equals("null"))
         {
             background = "http://image.tmdb.org/t/p/w185" + poster;
@@ -148,22 +152,21 @@ public class MovieData implements Parcelable
 
     public String getReleaseDate()
     {
-        String pattern = "yyyy";
-        String formattedDate = "Date not found";
+        String formattedDate = "Date not found";  //if date isn't found, use this
 
+        //to format date. ex: Jan 01, 2015
         DateFormat original = new SimpleDateFormat("yyyy-MM-dd");
-
         DateFormat formatted = new SimpleDateFormat("MMM dd, yyyy");
 
         try
         {
+            //sets the date to formatted date
             Date date = original.parse(releaseDate);
-
             formattedDate = formatted.format(date);
         }
         catch (Exception e)
         {
-            Log.e("Date Not Found", "Date Not Found");
+            Log.e("Date Not Found", e.toString());
         }
 
         return "Released: " + formattedDate;

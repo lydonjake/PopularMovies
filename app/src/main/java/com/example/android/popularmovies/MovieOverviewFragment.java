@@ -37,7 +37,10 @@ import java.util.ArrayList;
 import java.util.concurrent.ExecutionException;
 
 /**
- * A placeholder fragment containing a simple view.
+ * MovieOverviewFragment.java
+ * Created by Jake Lydon on 9/28/2015.
+ *
+ * Purpose: Fragment that shows main movie grid.
  */
 public class MovieOverviewFragment extends Fragment
 {
@@ -57,7 +60,7 @@ public class MovieOverviewFragment extends Fragment
 
         setHasOptionsMenu(true);
 
-        setRetainInstance(true);
+        setRetainInstance(true);  //saves the instance
 
         updateMovies();
     }
@@ -68,33 +71,40 @@ public class MovieOverviewFragment extends Fragment
         // Inflate the menu; this adds items to the action bar if it is present.
         inflater.inflate(R.menu.menu_movie_overview_fragment, menu); // inflate the menu
 
+        //sets up the spinner sort
         MenuItem item = menu.findItem(R.id.menu_spinner);
         Spinner spinner = (Spinner) item.getActionView();
         ArrayAdapter adapter = ArrayAdapter.createFromResource(getActivity(),
                 R.array.action_sort_list, R.layout.support_simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
 
+        //sort key needed to properly set spinner
         SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         String sortType = sharedPref.getString("pref_sort_key",
                 getString(R.string.pref_sort_default));
 
-        int sortSpot = 0;
+        int sortSpot = 0;  //spinner defaults to popularity
 
+        //if the sort key is vote_average, spinner should be on vote average
         if(sortType.equals(getString(R.string.pref_sort_setUserRating)))
         {
             sortSpot = 1;
         }
 
-        spinner.setSelection(sortSpot, false);
+        spinner.setSelection(sortSpot, false);  //sets the spinner to the proper key
 
         spinner.setOnItemSelectedListener(new SpinnerListener());
     }
 
+    /**
+     * Spinner listener class for sort by spinner.
+     */
     public class SpinnerListener implements AdapterView.OnItemSelectedListener
     {
         @Override
         public void onItemSelected(AdapterView<?> parent, View view, int position, long id)
         {
+            //if sort by popularity is selected, set sort key to popularity and call update movies.
             if (position == 0)
             {
                 String sort = getString(R.string.pref_sort_setPopularity);
@@ -106,7 +116,7 @@ public class MovieOverviewFragment extends Fragment
 
                 updateMovies();
             }
-            else
+            else  //else set sort key to vote_average and call update movies.
             {
                 String sort = getString(R.string.pref_sort_setUserRating);
 
@@ -125,6 +135,9 @@ public class MovieOverviewFragment extends Fragment
         }
     }
 
+    /**
+     * Image adapter that handles the movie poster grid images.
+     */
     public class ImageAdapter extends BaseAdapter
     {
         private Context mContext;
@@ -136,7 +149,7 @@ public class MovieOverviewFragment extends Fragment
 
         public int getCount()
         {
-            return movieDataLength;
+            return movieDataLength;  //length of the grid from arraylist length
         }
 
         public Object getItem(int position)
@@ -160,8 +173,8 @@ public class MovieOverviewFragment extends Fragment
                 imageView = (ImageView) convertView;
             }
 
+            //loads image into view via picasso, with placeholder if image error occurs
             Picasso.with(mContext).load(movieData.get(position).getPoster())
- //                   .error(mContext.getResources().getDrawable(R.drawable.placeholderimage))
                     .error(R.drawable.placeholderimage)
                     .into(imageView);
 
@@ -181,16 +194,17 @@ public class MovieOverviewFragment extends Fragment
 
         gridView.setAdapter(movieAdapter);
 
+        //click listener to direct click on a poster to detail view
         gridView.setOnItemClickListener(new AdapterView.OnItemClickListener()
         {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l)
             {
-                MovieData movie = movieData.get(pos);
-
+                //bundle to send MovieData object parcel to detail activity, via intent
                 Bundle bundle = new Bundle();
-                bundle.putParcelable("movieData", movie);
+                bundle.putParcelable("movieData", movieData.get(pos));
 
+                //sends the bundle to the detail activity with intent
                 Intent detailIntent = new Intent(view.getContext(), MovieDetailActivity.class);
                 detailIntent.putExtras(bundle);
                 startActivity(detailIntent);
@@ -200,18 +214,22 @@ public class MovieOverviewFragment extends Fragment
         return rootView;
     }
 
+    /**
+     * Updates the movies shown in the grid view
+     */
     private void updateMovies()
     {
         final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
 
+        //need sort key to fetch proper movie list
         SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
         String sortType = sharedPref.getString("pref_sort_key",
                 getString(R.string.pref_sort_default));
 
         try
         {
-            movieData = new FetchMovieDataTask().execute(sortType).get();
-            movieDataLength = movieData.size();
+            movieData = new FetchMovieDataTask().execute(sortType).get();  //get the movies
+            movieDataLength = movieData.size();  //set the length for the image adapter
         }
         catch (ExecutionException e)
         {
@@ -221,22 +239,22 @@ public class MovieOverviewFragment extends Fragment
         {
             Log.e(LOG_TAG, "Error ", e);
         }
-
     }
 
     public class FetchMovieDataTask extends AsyncTask<String,Void,ArrayList<MovieData>>
     {
         private final String LOG_TAG = FetchMovieDataTask.class.getSimpleName();
 
-        private ArrayList<MovieData> movieDataArray;
+        private ArrayList<MovieData> movieDataArray;  //arraylist to return
 
         @Override
         protected ArrayList<MovieData> doInBackground(String... params)
         {
-            final int PAGES_TO_FETCH = 5;
+            final int PAGES_TO_FETCH = 5;  //20 movies per page
 
-            String sortType = params[0];
-            final String VOTE_COUNT = "20";
+            String sortType = params[0];  //sort type set to sort key param
+
+            final String VOTE_COUNT = "20";  //at least 20 votes required to be included in list
 
             HttpURLConnection urlConnection = null;
             BufferedReader reader = null;
@@ -244,9 +262,10 @@ public class MovieOverviewFragment extends Fragment
             // Will contain the raw JSON response as a string, within an arraylist.
             ArrayList<String> tmdbJsonStr = new ArrayList<>();
 
-            for (int page = 1; page <= PAGES_TO_FETCH; page++)
+            try
             {
-                try
+                //for loop needed to load multiple pages
+                for (int page = 1; page <= PAGES_TO_FETCH; page++)
                 {
                     Uri.Builder builder = new Uri.Builder();
 
@@ -292,32 +311,38 @@ public class MovieOverviewFragment extends Fragment
                         return null;
                     }
 
-                    tmdbJsonStr.add(buffer.toString());
-
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Error ", e);
-                    // If the code didn't successfully get the weather data,
-                    // there's no point in attempting
-                    // to parse it.
-                    return null;
-                } finally{
-                    if (urlConnection != null) {
-                        urlConnection.disconnect();
-                    }
-                    if (reader != null) {
-                        try {
-                            reader.close();
-                        } catch (final IOException e) {
-                            Log.e(LOG_TAG, "Error closing stream", e);
-                        }
+                    tmdbJsonStr.add(buffer.toString());  //adds JSON data to next spot in arraylist
+                }
+            }
+            catch (IOException e)
+            {
+                Log.e(LOG_TAG, "Error ", e);
+                // If the code didn't successfully get the movie data,
+                // there's no point in attempting
+                // to parse it.
+                return null;
+            }
+            finally
+            {
+                if (urlConnection != null)
+                {
+                    urlConnection.disconnect();
+                }
+                if (reader != null)
+                {
+                    try
+                    {
+                        reader.close();
+                    } catch (final IOException e)
+                    {
+                        Log.e(LOG_TAG, "Error closing stream", e);
                     }
                 }
-
-
             }
 
             try
             {
+                //get parsed movie data and assign to arraylist
                 movieDataArray = getMovieDataFromJson(tmdbJsonStr, PAGES_TO_FETCH);
             }
             catch (JSONException e)
@@ -342,20 +367,25 @@ public class MovieOverviewFragment extends Fragment
             final String TMDB_POPULARITY = "popularity";
             final String TMDB_USER_RATING = "vote_average";
 
-            final int PAGES_PER = 20;
+            final int PAGES_PER = 20;  //tmdb returns 20 items per page
 
+            //creates the array list of MovieData objects
             ArrayList<MovieData> movies = new ArrayList<>();
 
+            //for loop to handle multiple pages
             for(int i = 0; i < pages; i++)
             {
+                //set up the JSON data to parse
                 JSONObject tmdbJson = new JSONObject(tmdbJsonStr.get(i));
                 JSONArray jsonArray = tmdbJson.getJSONArray(TMDB_RESULTS);
 
+                //ranges necessary to account for multiple pages
                 int rangeLow = i * PAGES_PER;
                 int rangeHigh = rangeLow + PAGES_PER;
 
-                int count = 0;
+                int count = 0;  //counter to keep track of spot in arraylist
 
+                //for loop to load all movies in page
                 for(int j = rangeLow; j < rangeHigh; j++)
                 {
                     movies.add(new MovieData());
