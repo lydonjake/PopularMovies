@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">Popular Movies</string>
+    <string name="hello_world">Hello World!</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_movie_detail">Movie Detail</string>
+    <string name="api_key">insert API key here</string>
+
+    <string name="movie_title">Movie Title</string>
+
+    <string name="action_sort_title">Sort By</string>
+
+    <string-array name="action_sort_list">
+        <item>Popularity</item>
+        <item>User Rating</item>
+    </string-array>
+
+    <string name="pref_sort_default">popularity.desc</string>
+
+    <string name="pref_sort_key">sortBy</string>
+
+    <string name="pref_sort_setPopularity">popularity.desc</string>
+
+    <string name="pref_sort_setUserRating">vote_average.desc</string>
+
+    <string name="pref_sortSpot_key">sortSpot</string>
+
+    <string name="pref_sortSpot_default">0</string>
+
+</resources>
