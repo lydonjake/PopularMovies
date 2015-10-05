@@ -3,6 +3,8 @@ package com.example.android.popularmovies;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -20,6 +22,7 @@ import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import com.squareup.picasso.Picasso;
 
@@ -34,7 +37,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
 
 /**
  * MovieOverviewFragment.java
@@ -175,6 +177,7 @@ public class MovieOverviewFragment extends Fragment
 
             //loads image into view via picasso, with placeholder if image error occurs
             Picasso.with(mContext).load(movieData.get(position).getPoster())
+                    .placeholder(R.drawable.abc_dialog_material_background_light)
                     .error(R.drawable.placeholderimage)
                     .into(imageView);
 
@@ -219,25 +222,25 @@ public class MovieOverviewFragment extends Fragment
      */
     private void updateMovies()
     {
-        final String LOG_TAG = MovieOverviewFragment.class.getSimpleName();
+        //check the network connection status
+        ConnectivityManager connectivityManager = (ConnectivityManager)getActivity()
+                .getSystemService(getActivity().CONNECTIVITY_SERVICE);
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
 
-        //need sort key to fetch proper movie list
-        SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
-        String sortType = sharedPref.getString("pref_sort_key",
-                getString(R.string.pref_sort_default));
+        //if network is connected, get movie data
+        if(networkInfo != null && networkInfo.isConnectedOrConnecting())
+        {
+            //need sort key to fetch proper movie list
+            SharedPreferences sharedPref = getActivity().getPreferences(Context.MODE_PRIVATE);
+            String sortType = sharedPref.getString("pref_sort_key",
+                    getString(R.string.pref_sort_default));
 
-        try
-        {
-            movieData = new FetchMovieDataTask().execute(sortType).get();  //get the movies
-            movieDataLength = movieData.size();  //set the length for the image adapter
+            new FetchMovieDataTask().execute(sortType); //get the movies
+
         }
-        catch (ExecutionException e)
+        else  //display toast that there is "No Internet Connection"
         {
-            Log.e(LOG_TAG, "Error ", e);
-        }
-        catch (InterruptedException e)
-        {
-            Log.e(LOG_TAG, "Error ", e);
+            Toast.makeText(getActivity(), "No Internet Connection", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -281,9 +284,6 @@ public class MovieOverviewFragment extends Fragment
                             .appendQueryParameter("api_key", getString(R.string.api_key));
                     URL url = new URL(builder.build().toString());
 
-                    Log.v("SortType", sortType);
-                    Log.v("URL", url.toString());
-
                     // Create the request to TMDB, and open the connection
                     urlConnection = (HttpURLConnection) url.openConnection();
                     urlConnection.setRequestMethod("GET");
@@ -291,19 +291,18 @@ public class MovieOverviewFragment extends Fragment
 
                     // Read the input stream into a String
                     InputStream inputStream = urlConnection.getInputStream();
-                    StringBuffer buffer = new StringBuffer();
-                    if (inputStream == null) {
+                    StringBuilder buffer = new StringBuilder();
+                    if (inputStream == null)
+                    {
                         // Nothing to do.
                         return null;
                     }
                     reader = new BufferedReader(new InputStreamReader(inputStream));
 
                     String line;
-                    while ((line = reader.readLine()) != null) {
-                        // Since it's JSON, adding a newline isn't necessary (it won't affect parsing)
-                        // But it does make debugging a *lot* easier if you print out the completed
-                        // buffer for debugging.
-                        buffer.append(line + "\n");
+                    while ((line = reader.readLine()) != null)
+                    {
+                        buffer.append(line);
                     }
 
                     if (buffer.length() == 0) {
@@ -416,10 +415,8 @@ public class MovieOverviewFragment extends Fragment
         protected void onPostExecute(ArrayList<MovieData> arrayList)
         {
             movieData = arrayList;
+            movieDataLength = movieData.size();
             movieAdapter.notifyDataSetChanged();
-
         }
-
     }
-
 }
